@@ -6,8 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"github.com/joefazee/learning-go-shop/internal/interfaces"
 )
+
+var _ UploadServiceInterface = (*UploadService)(nil)
 
 type UploadService struct {
 	provider interfaces.UploadProvider
@@ -24,7 +28,7 @@ func (s *UploadService) UploadProductImage(productID uint, file *multipart.FileH
 		return "", fmt.Errorf("invalid file type: %s", ext)
 	}
 
-	path := fmt.Sprintf("products/%d/%s", productID, file.Filename)
+	path := fmt.Sprintf("products/%d/%s%s", productID, uuid.New().String(), ext)
 
 	return s.provider.UploadFile(file, path)
 }

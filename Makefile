@@ -1,4 +1,4 @@
-.PHONY: help build run dev lint migrate-up migrate-down
+.PHONY: help build run dev lint migrate-up migrate-down docs-generate
 
 help:
 	@echo "Available commands:"
@@ -12,7 +12,15 @@ help:
 
 
 build:
-	go build -o bin/app ./cmd/api
+	@echo "Building all binaries...."
+	@mkdir -p bin
+	@for cmd in cmd/*/; do \
+    		if [ -d "$$cmd" ]; then \
+    			binary=$$(basename $$cmd); \
+    			echo "Building $$binary..."; \
+    			go build -o bin/$$binary ./$$cmd; \
+    		fi \
+    	done
 
 run:
 	go run ./cmd/api
@@ -27,6 +35,10 @@ format:
 	@gofmt -s -w .
 	@goimports -w .
 
+docs-generate:
+	mkdir -p docs
+	swag init -g cmd/api/main.go -o docs --parseDependency --parseInternal --exclude .git,docs,docker,db
+
 migrate-up:
 	migrate -path db/migrations -database "postgresql://postgres:password@localhost:5432/ecommerce_shop?sslmode=disable" up
 
@@ -38,3 +50,7 @@ docker-up:
 
 docker-down:
 	docker compose -f docker/docker-compose.yml down
+
+graph-generate:
+	@go get github.com/99designs/gqlgen@v0.17.78
+	@go run github.com/99designs/gqlgen generate

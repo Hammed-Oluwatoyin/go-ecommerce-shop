@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type CreateCategoryRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
@@ -12,10 +14,12 @@ type UpdateCategoryRequest struct {
 }
 
 type CategoryResponse struct {
-	ID          uint   `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsActive    bool   `json:"is_active"`
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	IsActive    bool      `json:"is_active"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type CreateProductRequest struct {
@@ -47,11 +51,28 @@ type ProductResponse struct {
 	IsActive    bool                   `json:"is_active"`
 	Category    CategoryResponse       `json:"category"`
 	Images      []ProductImageResponse `json:"images"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
 type ProductImageResponse struct {
-	ID        uint   `json:"id"`
-	URL       string `json:"url"`
-	AltText   string `json:"alt_text"`
-	IsPrimary bool   `json:"is_primary"`
+	ID        uint      `json:"id"`
+	URL       string    `json:"url"`
+	AltText   string    `json:"alt_text"`
+	IsPrimary bool      `json:"is_primary"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type SearchProductsRequest struct {
+	Query      string   `form:"q" binding:"required,min=1"`
+	Page       int      `form:"page"`
+	Limit      int      `form:"limit"`
+	CategoryID *uint    `form:"category_id"`
+	MinPrice   *float64 `form:"min_price"`
+	MaxPrice   *float64 `form:"max_price"`
+}
+
+type ProductSearchResult struct {
+	ProductResponse
+	Rank float32 `json:"rank"`
 }
