@@ -4,44 +4,43 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/joefazee/learning-go-shop/docs"
 	"github.com/joefazee/learning-go-shop/internal/config"
 	"github.com/joefazee/learning-go-shop/internal/services"
 	"github.com/rs/zerolog"
-	"gorm.io/gorm"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Server struct {
 	config         *config.Config
-	db             *gorm.DB
 	logger         *zerolog.Logger
-	authService    *services.AuthService
-	productService *services.ProductService
-	userService    *services.UserService
-	uploadService  *services.UploadService
-	cartService    *services.CartService
-	orderService   *services.OrderService
+	authService    services.AuthServiceInterface
+	productService services.ProductServiceInterface
+	userService    services.UserServiceInterface
+	uploadService  services.UploadServiceInterface
+	cartService    services.CartServiceInterface
+	orderService   services.OrderServiceInterface
 }
 
 func New(cfg *config.Config,
-	db *gorm.DB,
 	logger *zerolog.Logger,
-	authService *services.AuthService,
-	productService *services.ProductService,
-	userService *services.UserService,
-	uploadService *services.UploadService,
-	cartService *services.CartService,
-	orderServuce *services.OrderService,
+	authService services.AuthServiceInterface,
+	productService services.ProductServiceInterface,
+	userService services.UserServiceInterface,
+	uploadService services.UploadServiceInterface,
+	cartService services.CartServiceInterface,
+	orderService services.OrderServiceInterface,
 ) *Server {
 	return &Server{
 		config:         cfg,
-		db:             db,
 		logger:         logger,
 		authService:    authService,
 		productService: productService,
 		userService:    userService,
 		uploadService:  uploadService,
 		cartService:    cartService,
-		orderService:   orderServuce,
+		orderService:   orderService,
 	}
 }
 
@@ -56,7 +55,25 @@ func (s *Server) SetupRoutes() *gin.Engine {
 	// Add routes
 	router.GET("/health", s.healthCheck)
 
+	// Add documentation routes
+	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	router.StaticFile("/api-docs", "./docs/rapidoc.html")
+
 	router.Static("/uploads", "./uploads")
+
+	router.GET("/playground", s.playgroundHandler())
+	router.GET("/playground/public", s.playgroundPublicHandler())
+	router.GET("/playground/protected", s.playgroundProtectedHandler())
+
+	graphqlPublic := router.Group("/graphql/public")
+	graphqlPublic.Use(s.graphqlMiddleware())
+	graphqlPublic.POST("/", s.graphqlHandler())
+
+	graphqlProtected := router.Group("/graphql")
+	graphqlProtected.Use(s.authMiddleware())
+	graphqlProtected.Use(s.graphqlMiddleware())
+	graphqlProtected.POST("/", s.graphqlHandler())
 
 	api := router.Group("/api/v1")
 	{
@@ -122,6 +139,7 @@ func (s *Server) SetupRoutes() *gin.Engine {
 
 		// public routes
 		api.GET("/categories", s.getCategories)
+		api.GET("/search", s.searchProducts)
 		api.GET("/products", s.getProducts)
 		api.GET("/products/:id", s.getProduct)
 

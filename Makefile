@@ -12,7 +12,15 @@ help:
 
 
 build:
-	go build -o bin/app ./cmd/api
+	@echo "Building all binaries...."
+	@mkdir -p bin
+	@for cmd in cmd/*/; do \
+    		if [ -d "$$cmd" ]; then \
+    			binary=$$(basename $$cmd); \
+    			echo "Building $$binary..."; \
+    			go build -o bin/$$binary ./$$cmd; \
+    		fi \
+    	done
 
 run:
 	go run ./cmd/api
@@ -38,3 +46,7 @@ docker-up:
 
 docker-down:
 	docker compose -f docker/docker-compose.yml down
+
+graph-generate:
+	@go get github.com/99designs/gqlgen@v0.17.78
+	@go run github.com/99designs/gqlgen generate
